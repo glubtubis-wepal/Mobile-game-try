@@ -1,22 +1,22 @@
+/* ===============================
+   CANVAS SETUP
+================================ */
 const canvas = document.getElementById("game");
 const ctx = canvas.getContext("2d");
 
 canvas.width = window.innerWidth;
 canvas.height = window.innerHeight;
 
-/* =========================
-   SPRITE SHEET CONFIG
-   🔧 CHANGE THESE TWO NUMBERS
-========================= */
-const SPRITE = {
-  columns: 9,   // frames across
-  rows: 2,      // frames down
-  frameSpeed: 6 // lower = faster
-};
+/* ===============================
+   SPRITE CONFIG
+   🔧 CHANGE ONLY THIS
+================================ */
+const SPRITE_FRAMES = 8; // how many frames across your sprite
+const FRAME_SPEED = 6;  // lower = faster animation
 
-/* =========================
+/* ===============================
    IMAGES
-========================= */
+================================ */
 const playerImg = new Image();
 playerImg.src = "player.png";
 
@@ -27,9 +27,9 @@ bgMid.src = "bg_mid.png";
 const bgNear = new Image();
 bgNear.src = "bg_near.png";
 
-/* =========================
+/* ===============================
    PLAYER
-========================= */
+================================ */
 const player = {
   x: 120,
   y: 0,
@@ -44,59 +44,65 @@ const player = {
   frameTimer: 0
 };
 
-/* =========================
+/* ===============================
    WORLD
-========================= */
+================================ */
 const groundY = canvas.height - 140;
-const speed = 5;
+const runSpeed = 5;
 
-/* =========================
+/* ===============================
    PARALLAX
-========================= */
-let bgX = { far: 0, mid: 0, near: 0 };
+================================ */
+let bgX = {
+  far: 0,
+  mid: 0,
+  near: 0
+};
 
-/* =========================
-   SPRITE DATA (AUTO)
-========================= */
+/* ===============================
+   SPRITE AUTO DATA
+================================ */
 let frameWidth = 0;
 let frameHeight = 0;
-let totalFrames = 0;
 
-/* =========================
+/* ===============================
    TOUCH INPUT
-========================= */
-let startX = 0, startY = 0;
+================================ */
+let touchStartX = 0;
+let touchStartY = 0;
 
 canvas.addEventListener("touchstart", e => {
   const t = e.touches[0];
-  startX = t.clientX;
-  startY = t.clientY;
+  touchStartX = t.clientX;
+  touchStartY = t.clientY;
 });
 
 canvas.addEventListener("touchend", e => {
   const t = e.changedTouches[0];
-  const dx = t.clientX - startX;
-  const dy = t.clientY - startY;
+  const dx = t.clientX - touchStartX;
+  const dy = t.clientY - touchStartY;
 
+  // DASH
   if (Math.abs(dx) > Math.abs(dy)) {
-    // DASH
     player.x += dx > 0 ? 200 : -200;
-  } else {
-    if (dy < -60 && player.grounded) {
-      // JUMP
-      player.vy = player.jumpForce;
-      player.grounded = false;
-    }
-    if (dy > 60) {
-      // DOWN STRIKE
-      player.vy = 28;
-    }
+    return;
+  }
+
+  // JUMP
+  if (dy < -60 && player.grounded) {
+    player.vy = player.jumpForce;
+    player.grounded = false;
+  }
+
+  // DOWN STRIKE
+  if (dy > 60) {
+    player.vy = 30;
   }
 });
 
-/* =========================
-   UPDATE
-========================= */
+/* ===============================
+   UPDATE LOOP
+================================ */
 function update() {
   // Physics
   player.vy += player.gravity;
@@ -108,32 +114,38 @@ function update() {
     player.grounded = true;
   }
 
-  // Parallax
-  bgX.far -= speed * 0.2;
-  bgX.mid -= speed * 0.5;
-  bgX.near -= speed;
+  // Parallax movement
+  bgX.far -= runSpeed * 0.2;
+  bgX.mid -= runSpeed * 0.5;
+  bgX.near -= runSpeed;
 
-  for (let k in bgX) {
-    if (bgX[k] <= -canvas.width) bgX[k] = 0;
+  for (let layer in bgX) {
+    if (bgX[layer] <= -canvas.width) {
+      bgX[layer] = 0;
+    }
   }
 
   updateAnimation();
 }
 
-/* =========================
-   ANIMATION (AUTO SAFE)
-========================= */
+/* ===============================
+   ANIMATION (FORCED LOOP)
+================================ */
 function updateAnimation() {
   player.frameTimer++;
-  if (player.frameTimer >= SPRITE.frameSpeed) {
-    player.frame = (player.frame + 1) % totalFrames;
+
+  if (player.frameTimer >= FRAME_SPEED) {
+    player.frame++;
+    if (player.frame >= SPRITE_FRAMES) {
+      player.frame = 0; // 🔒 HARD LOOP
+    }
     player.frameTimer = 0;
   }
 }
 
-/* =========================
+/* ===============================
    DRAW
-========================= */
+================================ */
 function draw() {
   ctx.clearRect(0, 0, canvas.width, canvas.height);
 
@@ -141,6 +153,7 @@ function draw() {
   drawBG(bgMid, bgX.mid);
   drawBG(bgNear, bgX.near);
 
+  // Ground
   ctx.fillStyle = "#222";
   ctx.fillRect(0, groundY, canvas.width, 200);
 
@@ -153,13 +166,10 @@ function drawBG(img, x) {
 }
 
 function drawPlayer() {
-  const col = player.frame % SPRITE.columns;
-  const row = Math.floor(player.frame / SPRITE.columns);
+  const sx = player.frame * frameWidth;
+  const sy = 0;
 
-  const sx = col * frameWidth;
-  const sy = row * frameHeight;
-
-  ctx.imageSmoothingEnabled = false; // IMPORTANT for PC sprites
+  ctx.imageSmoothingEnabled = false; // important for PC sprites
 
   ctx.drawImage(
     playerImg,
@@ -174,26 +184,25 @@ function drawPlayer() {
   );
 }
 
-/* =========================
-   START (WAIT FOR IMAGE)
-========================= */
+/* ===============================
+   START GAME (WAIT FOR SPRITE)
+================================ */
 playerImg.onload = () => {
-  frameWidth = playerImg.width / SPRITE.columns;
-  frameHeight = playerImg.height / SPRITE.rows;
-  totalFrames = SPRITE.columns * SPRITE.rows;
+  frameWidth = playerImg.width / SPRITE_FRAMES;
+  frameHeight = playerImg.height;
 
-  // Scale DOWN PC sprite for mobile
+  // Scale PC sprite down for mobile
   const scale = 0.35;
   player.width = frameWidth * scale;
   player.height = frameHeight * scale;
 
   player.y = groundY - player.height;
 
-  requestAnimationFrame(loop);
+  requestAnimationFrame(gameLoop);
 };
 
-function loop() {
+function gameLoop() {
   update();
   draw();
-  requestAnimationFrame(loop);
+  requestAnimationFrame(gameLoop);
 }
