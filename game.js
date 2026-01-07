@@ -11,7 +11,7 @@ canvas.height = window.innerHeight;
    SPRITE CONFIG
    🔧 CHANGE ONLY THIS
 ================================ */
-const SPRITE_FRAMES = 8; // how many frames across your sprite
+const SPRITE_FRAMES = 9; // how many frames across your sprite
 const FRAME_SPEED = 6;  // lower = faster animation
 
 /* ===============================
