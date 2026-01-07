@@ -9,10 +9,10 @@ canvas.height = window.innerHeight;
    🔧 CHANGE THESE ONLY
 ===================== */
 const SPRITE = {
-  frameWidth: 128,
-  frameHeight: 128,
+  frameWidth: 256,
+  frameHeight: 256,
   frameCount: 8,
-  frameSpeed: 6,
+  frameSpeed: 24,
   direction: "horizontal" // "horizontal" OR "vertical"
 };
 
