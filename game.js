@@ -9,7 +9,7 @@ canvas.height = window.innerHeight;
    🔧 CHANGE THESE TWO NUMBERS
 ========================= */
 const SPRITE = {
-  columns: 8,   // frames across
+  columns: 9,   // frames across
   rows: 2,      // frames down
   frameSpeed: 6 // lower = faster
 };
