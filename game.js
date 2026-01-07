@@ -5,17 +5,27 @@ canvas.width = window.innerWidth;
 canvas.height = window.innerHeight;
 
 /* =====================
-   ASSETS
+   SPRITE SETTINGS
+   🔧 CHANGE THESE ONLY
+===================== */
+const SPRITE = {
+  frameWidth: 64,
+  frameHeight: 64,
+  frameCount: 8,
+  frameSpeed: 6,
+  direction: "horizontal" // "horizontal" OR "vertical"
+};
+
+/* =====================
+   IMAGES
 ===================== */
 const playerImg = new Image();
 playerImg.src = "player.png";
 
 const bgFar = new Image();
 bgFar.src = "bg_far.png";
-
 const bgMid = new Image();
 bgMid.src = "bg_mid.png";
-
 const bgNear = new Image();
 bgNear.src = "bg_near.png";
 
@@ -23,15 +33,16 @@ bgNear.src = "bg_near.png";
    PLAYER
 ===================== */
 const player = {
-  x: 100,
-  y: canvas.height - 220,
-  width: 64,
-  height: 64,
+  x: 120,
+  y: 0,
+  width: 80,
+  height: 80,
   vy: 0,
-  gravity: 0.8,
-  jumpForce: -18,
-  grounded: true,
-  dashSpeed: 18,
+  gravity: 0.9,
+  jumpForce: -20,
+  grounded: false,
+  dashPower: 250,
+
   frame: 0,
   frameTimer: 0
 };
@@ -39,44 +50,40 @@ const player = {
 /* =====================
    WORLD
 ===================== */
-let groundY = canvas.height - 150;
-let speed = 5;
+const groundY = canvas.height - 150;
+const speed = 5;
 
 /* =====================
    PARALLAX
 ===================== */
-let bgX = {
-  far: 0,
-  mid: 0,
-  near: 0
-};
+let bgX = { far: 0, mid: 0, near: 0 };
 
 /* =====================
    TOUCH INPUT
 ===================== */
-let touchStart = { x: 0, y: 0 };
+let startX = 0, startY = 0;
 
 canvas.addEventListener("touchstart", e => {
   const t = e.touches[0];
-  touchStart.x = t.clientX;
-  touchStart.y = t.clientY;
+  startX = t.clientX;
+  startY = t.clientY;
 });
 
 canvas.addEventListener("touchend", e => {
   const t = e.changedTouches[0];
-  const dx = t.clientX - touchStart.x;
-  const dy = t.clientY - touchStart.y;
+  const dx = t.clientX - startX;
+  const dy = t.clientY - startY;
 
   if (Math.abs(dx) > Math.abs(dy)) {
     // DASH
-    player.x += dx > 0 ? player.dashSpeed * 10 : -player.dashSpeed * 10;
+    player.x += dx > 0 ? player.dashPower : -player.dashPower;
   } else {
-    if (dy < -50 && player.grounded) {
+    if (dy < -60 && player.grounded) {
       // JUMP
       player.vy = player.jumpForce;
       player.grounded = false;
     }
-    if (dy > 50) {
+    if (dy > 60) {
       // DOWN STRIKE
       player.vy = 25;
     }
@@ -87,7 +94,7 @@ canvas.addEventListener("touchend", e => {
    UPDATE
 ===================== */
 function update() {
-  // Player physics
+  // Physics
   player.vy += player.gravity;
   player.y += player.vy;
 
@@ -97,19 +104,25 @@ function update() {
     player.grounded = true;
   }
 
-  // Parallax movement
+  // Parallax
   bgX.far -= speed * 0.2;
   bgX.mid -= speed * 0.5;
   bgX.near -= speed;
 
-  if (bgX.far <= -canvas.width) bgX.far = 0;
-  if (bgX.mid <= -canvas.width) bgX.mid = 0;
-  if (bgX.near <= -canvas.width) bgX.near = 0;
+  for (let k in bgX) {
+    if (bgX[k] <= -canvas.width) bgX[k] = 0;
+  }
 
-  // Animation
+  updateAnimation();
+}
+
+/* =====================
+   ANIMATION (FIXED)
+===================== */
+function updateAnimation() {
   player.frameTimer++;
-  if (player.frameTimer > 6) {
-    player.frame = (player.frame + 1) % 6; // 6-frame sprite
+  if (player.frameTimer >= SPRITE.frameSpeed) {
+    player.frame = (player.frame + 1) % SPRITE.frameCount;
     player.frameTimer = 0;
   }
 }
@@ -120,36 +133,54 @@ function update() {
 function draw() {
   ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-  // Background layers
-  drawParallax(bgFar, bgX.far);
-  drawParallax(bgMid, bgX.mid);
-  drawParallax(bgNear, bgX.near);
+  drawBG(bgFar, bgX.far);
+  drawBG(bgMid, bgX.mid);
+  drawBG(bgNear, bgX.near);
 
-  // Ground
-  ctx.fillStyle = "#333";
+  ctx.fillStyle = "#222";
   ctx.fillRect(0, groundY, canvas.width, 200);
 
-  // Player sprite animation
-  ctx.drawImage(
-    playerImg,
-    player.frame * 64, 0, 64, 64,
-    player.x, player.y,
-    player.width, player.height
-  );
+  drawPlayer();
 }
 
-function drawParallax(img, x) {
+function drawBG(img, x) {
   ctx.drawImage(img, x, 0, canvas.width, canvas.height);
   ctx.drawImage(img, x + canvas.width, 0, canvas.width, canvas.height);
 }
 
+function drawPlayer() {
+  let sx = 0;
+  let sy = 0;
+
+  if (SPRITE.direction === "horizontal") {
+    sx = player.frame * SPRITE.frameWidth;
+  } else {
+    sy = player.frame * SPRITE.frameHeight;
+  }
+
+  ctx.drawImage(
+    playerImg,
+    sx,
+    sy,
+    SPRITE.frameWidth,
+    SPRITE.frameHeight,
+    player.x,
+    player.y,
+    player.width,
+    player.height
+  );
+}
+
 /* =====================
-   GAME LOOP
+   LOOP (SAFE LOAD)
 ===================== */
+playerImg.onload = () => {
+  player.y = groundY - player.height;
+  requestAnimationFrame(loop);
+};
+
 function loop() {
   update();
   draw();
   requestAnimationFrame(loop);
 }
-
-loop();
