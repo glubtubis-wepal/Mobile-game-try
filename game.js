@@ -33,10 +33,10 @@ bgNear.src = "bg_near.png";
    PLAYER
 ===================== */
 const player = {
-  x: 120,
+  x: 60,
   y: 0,
-  width: 80,
-  height: 80,
+  width: 40,
+  height: 40,
   vy: 0,
   gravity: 0.9,
   jumpForce: -20,
