@@ -4,21 +4,19 @@ const ctx = canvas.getContext("2d");
 canvas.width = window.innerWidth;
 canvas.height = window.innerHeight;
 
-/* =====================
-   SPRITE SETTINGS
-   🔧 CHANGE THESE ONLY
-===================== */
+/* =========================
+   SPRITE SHEET CONFIG
+   🔧 CHANGE THESE TWO NUMBERS
+========================= */
 const SPRITE = {
-  frameWidth: 1052,
-  frameHeight: 1052,
-  frameCount: 8,
-  frameSpeed: 128,
-  direction: "horizontal" // "horizontal" OR "vertical"
+  columns: 8,   // frames across
+  rows: 1,      // frames down
+  frameSpeed: 6 // lower = faster
 };
 
-/* =====================
+/* =========================
    IMAGES
-===================== */
+========================= */
 const playerImg = new Image();
 playerImg.src = "player.png";
 
@@ -29,38 +27,44 @@ bgMid.src = "bg_mid.png";
 const bgNear = new Image();
 bgNear.src = "bg_near.png";
 
-/* =====================
+/* =========================
    PLAYER
-===================== */
+========================= */
 const player = {
   x: 120,
   y: 0,
-  width: 80,
-  height: 80,
+  width: 0,
+  height: 0,
   vy: 0,
-  gravity: 0.9,
-  jumpForce: -20,
+  gravity: 1,
+  jumpForce: -22,
   grounded: false,
-  dashPower: 250,
 
   frame: 0,
   frameTimer: 0
 };
 
-/* =====================
+/* =========================
    WORLD
-===================== */
-const groundY = canvas.height - 150;
+========================= */
+const groundY = canvas.height - 140;
 const speed = 5;
 
-/* =====================
+/* =========================
    PARALLAX
-===================== */
+========================= */
 let bgX = { far: 0, mid: 0, near: 0 };
 
-/* =====================
+/* =========================
+   SPRITE DATA (AUTO)
+========================= */
+let frameWidth = 0;
+let frameHeight = 0;
+let totalFrames = 0;
+
+/* =========================
    TOUCH INPUT
-===================== */
+========================= */
 let startX = 0, startY = 0;
 
 canvas.addEventListener("touchstart", e => {
@@ -76,7 +80,7 @@ canvas.addEventListener("touchend", e => {
 
   if (Math.abs(dx) > Math.abs(dy)) {
     // DASH
-    player.x += dx > 0 ? player.dashPower : -player.dashPower;
+    player.x += dx > 0 ? 200 : -200;
   } else {
     if (dy < -60 && player.grounded) {
       // JUMP
@@ -85,14 +89,14 @@ canvas.addEventListener("touchend", e => {
     }
     if (dy > 60) {
       // DOWN STRIKE
-      player.vy = 25;
+      player.vy = 28;
     }
   }
 });
 
-/* =====================
+/* =========================
    UPDATE
-===================== */
+========================= */
 function update() {
   // Physics
   player.vy += player.gravity;
@@ -116,20 +120,20 @@ function update() {
   updateAnimation();
 }
 
-/* =====================
-   ANIMATION (FIXED)
-===================== */
+/* =========================
+   ANIMATION (AUTO SAFE)
+========================= */
 function updateAnimation() {
   player.frameTimer++;
   if (player.frameTimer >= SPRITE.frameSpeed) {
-    player.frame = (player.frame + 1) % SPRITE.frameCount;
+    player.frame = (player.frame + 1) % totalFrames;
     player.frameTimer = 0;
   }
 }
 
-/* =====================
+/* =========================
    DRAW
-===================== */
+========================= */
 function draw() {
   ctx.clearRect(0, 0, canvas.width, canvas.height);
 
@@ -149,21 +153,20 @@ function drawBG(img, x) {
 }
 
 function drawPlayer() {
-  let sx = 0;
-  let sy = 0;
+  const col = player.frame % SPRITE.columns;
+  const row = Math.floor(player.frame / SPRITE.columns);
 
-  if (SPRITE.direction === "horizontal") {
-    sx = player.frame * SPRITE.frameWidth;
-  } else {
-    sy = player.frame * SPRITE.frameHeight;
-  }
+  const sx = col * frameWidth;
+  const sy = row * frameHeight;
+
+  ctx.imageSmoothingEnabled = false; // IMPORTANT for PC sprites
 
   ctx.drawImage(
     playerImg,
     sx,
     sy,
-    SPRITE.frameWidth,
-    SPRITE.frameHeight,
+    frameWidth,
+    frameHeight,
     player.x,
     player.y,
     player.width,
@@ -171,11 +174,21 @@ function drawPlayer() {
   );
 }
 
-/* =====================
-   LOOP (SAFE LOAD)
-===================== */
+/* =========================
+   START (WAIT FOR IMAGE)
+========================= */
 playerImg.onload = () => {
+  frameWidth = playerImg.width / SPRITE.columns;
+  frameHeight = playerImg.height / SPRITE.rows;
+  totalFrames = SPRITE.columns * SPRITE.rows;
+
+  // Scale DOWN PC sprite for mobile
+  const scale = 0.35;
+  player.width = frameWidth * scale;
+  player.height = frameHeight * scale;
+
   player.y = groundY - player.height;
+
   requestAnimationFrame(loop);
 };
 
