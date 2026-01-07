@@ -9,8 +9,8 @@ canvas.height = window.innerHeight;
    🔧 CHANGE THESE ONLY
 ===================== */
 const SPRITE = {
-  frameWidth: 64,
-  frameHeight: 64,
+  frameWidth: 128,
+  frameHeight: 128,
   frameCount: 8,
   frameSpeed: 6,
   direction: "horizontal" // "horizontal" OR "vertical"
@@ -33,10 +33,10 @@ bgNear.src = "bg_near.png";
    PLAYER
 ===================== */
 const player = {
-  x: 60,
+  x: 120,
   y: 0,
-  width: 40,
-  height: 40,
+  width: 80,
+  height: 80,
   vy: 0,
   gravity: 0.9,
   jumpForce: -20,
